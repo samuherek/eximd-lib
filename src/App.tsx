@@ -1,37 +1,14 @@
-// import reactLogo from "./assets/react.svg"; import { invoke } from "@tauri-apps/api/core";
+// import reactLogo from "./assets/react.svg"; 
+import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useRef, useState } from "react";
+import { convertFileSrc } from '@tauri-apps/api/core';
 import {
     BellIcon,
     Cog6ToothIcon,
     HomeIcon,
 } from '@heroicons/react/24/outline'
 import { MagnifyingGlassIcon } from '@heroicons/react/20/solid'
-
-const files = [
-    {
-        title: 'IMG_4985.HEIC',
-        size: '3.9 MB',
-        source:
-            'https://images.unsplash.com/photo-1582053433976-25c00369fc93?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=512&q=80',
-    },
-    {
-        title: 'IMG_4985.HEIC',
-        size: '3.9 MB',
-        source:
-            'https://plus.unsplash.com/premium_photo-1731860726887-6b1cb8129b0f?&auto=format&fit=crop&w=512&q=80&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-    },
-    {
-        title: 'IMG_4985.HEIC',
-        size: '3.9 MB',
-        source:
-            'https://images.unsplash.com/photo-1731902062604-51bb7926e6d5?&auto=format&fit=crop&w=512&q=80&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-    },
-    {
-        title: 'IMG_4985.HEIC',
-        size: '3.9 MB',
-        source:
-            'https://images.unsplash.com/photo-1582053433976-25c00369fc93?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=512&q=80',
-    },
-]
+import { open } from '@tauri-apps/plugin-dialog';
 
 const navigation = [
     { name: 'Dashboard', href: '#', icon: HomeIcon, current: true },
@@ -41,9 +18,34 @@ function classNames(...classes: any[]) {
     return classes.filter(Boolean).join(' ')
 }
 
+function Image({ file, className }: { file: any, className: string }) {
+    const tauriSrc = file.file_type == "IMG" ? convertFileSrc(file.src) : "";
 
+    return (
+        <img
+            alt=""
+            className={className}
+            src={tauriSrc}
+        />
+    )
+}
 
 function App() {
+    const [path, setPath] = useState([]);
+    const [fileCount, setFileCount] = useState(0);
+    const [files, setFiles] = useState<any[]>([]);
+
+    async function handleSelectDir() {
+        const path = await open({
+            multiple: false,
+            directory: true,
+        });
+        const files: any[] = await invoke("start_conversion", { path });
+        setFiles(files);
+
+        console.log("path: ", path, "files: ", files);
+    }
+
     // const [greetMsg, setGreetMsg] = useState("");
     // const [name, setName] = useState("");
 
@@ -53,18 +55,10 @@ function App() {
     // }
 
     return (
-        <>
-            {/*
-        This example requires updating your template:
-
-        ```
-       <html class="h-full bg-white">
-        <body class="h-full">
-        ```
-      */}
-            <div className="hidden sm:fixed sm:inset-y-0 sm:z-50 sm:flex sm:w-56 sm:flex-col">
+        <div className="grid grid-cols-[200px_1fr] h-screen overflow-hidden">
+            <div className="inset-y-0 flex flex-col">
                 {/* Sidebar component, swap this element with another sidebar if you like */}
-                <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-zinc-800 px-6 pb-4">
+                <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-zinc-950 px-6 pb-4">
                     <div className="flex h-16 shrink-0 items-center">
                         <span className="text-zinc-50 font-bold">Eximd</span>
                     </div>
@@ -96,6 +90,7 @@ function App() {
                                     ))}
                                 </ul>
                             </li>
+                            <button onClick={handleSelectDir}>Select</button>
                             <li className="mt-auto">
                                 <a
                                     href="#"
@@ -113,9 +108,9 @@ function App() {
                 </div>
             </div>
 
-            <div className="sm:pl-56">
-                <div className="sticky top-0 z-40 sm:mx-auto sm:max-w-7xl sm:px-8">
-                    <div className="flex h-16 items-center gap-x-4 border-b border-zinc-800 px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-0 lg:shadow-none">
+            <div className="">
+                <div className="z-40 mx-auto px-8">
+                    <div className="flex h-16 items-center gap-x-4 border-b border-zinc-950 px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-0 lg:shadow-none">
                         <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
                             <form action="#" method="GET" className="grid flex-1 grid-cols-1">
                                 <input
@@ -140,27 +135,28 @@ function App() {
                     </div>
                 </div>
 
-                <main className="py-10 ">
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <main className="bg-zinc-950 h-full overflow-x-auto">
+                    <div className="">
                         <ul role="list" className="grid grid-cols-2 gap-x-px gap-y-px sm:grid-cols-3 lg:grid-cols-4">
                             {files.map((file) => (
-                                <li key={file.source} className="relative bg-zinc-800">
-                                    <p className="block truncate text-sm text-gray-500">{file.title}</p>
+                                <li key={file.src} className="flex flex-col bg-zinc-900 h-[20vw] p-1">
+                                    <div>
+                                        <p className="truncate text-sm text-gray-500">{file.stem}</p>
+                                    </div>
                                     <div className="group overflow-hidden">
-                                        <img
-                                            alt=""
-                                            src={file.source}
-                                            className="h-1/4 aspect-auto m-auto object-contain group-hover:opacity-75 h-full"
+                                        <Image
+                                            file={file}
+                                            className="aspect-auto m-auto object-contain group-hover:opacity-75 h-full"
                                         />
                                     </div>
-                                    <p className="block text-sm font-medium text-gray-500">sss</p>
+                                    <p className="block text-sm font-medium text-gray-500 mt-auto">{file.ext}</p>
                                 </li>
                             ))}
                         </ul>
                     </div>
                 </main>
             </div>
-        </>
+        </div>
     );
 }
 
